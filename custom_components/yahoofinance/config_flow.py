@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, OptionsFlow
+from homeassistant.config_entries import ConfigFlow, OptionsFlowWithConfigEntry
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
@@ -81,7 +81,7 @@ class YahooFinanceConfigFlow(ConfigFlow, domain=DOMAIN):
         return YahooFinanceOptionsFlow()
 
 
-class YahooFinanceOptionsFlow(OptionsFlow):
+class YahooFinanceOptionsFlow(OptionsFlowWithConfigEntry):
     """Handle Yahoo Finance options."""
 
     async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
