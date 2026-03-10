@@ -105,7 +105,7 @@ class YahooFinanceOptionsFlow(OptionsFlow):
         options = DEFAULT_ENTRY_OPTIONS.copy()
         options.update(self.config_entry.options)
         symbols = options.get(CONF_SYMBOLS, self.config_entry.data.get(CONF_SYMBOLS, []))
-        symbols_as_text = "\n".join(symbols)
+        symbols_as_text = ", ".join(symbols)
 
         return self.async_show_form(
             step_id="init",

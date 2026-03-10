@@ -3,9 +3,9 @@
     "step": {
       "user": {
         "title": "Yahoo Finance",
-        "description": "Add symbols to track. You can configure advanced options after adding the integration.",
+        "description": "Add symbols to track separated by comma. You can configure advanced options after adding the integration.",
         "data": {
-          "symbols": "Symbols (comma or line separated)"
+          "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)"
         }
       }
     },
@@ -23,9 +23,9 @@
     "step": {
       "init": {
         "title": "Yahoo Finance options",
-        "description": "Advanced options for polling and exposed attributes. Scan interval is global for all symbols.",
+        "description": "Advanced options for polling and exposed attributes. Scan interval is global for all symbols. Symbols must be separated by comma.",
         "data": {
-          "symbols": "Symbols (comma or line separated)",
+          "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)",
           "manual_scan_interval": "Disable automatic updates (global)",
           "scan_interval_seconds": "Global automatic update interval (seconds)",
           "target_currency": "Target currency (optional)",
