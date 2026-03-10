@@ -84,10 +84,6 @@ class YahooFinanceConfigFlow(ConfigFlow, domain=DOMAIN):
 class YahooFinanceOptionsFlow(OptionsFlow):
     """Handle Yahoo Finance options."""
 
-    def __init__(self, config_entry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
         """Manage options for an existing Yahoo Finance config entry."""
 
