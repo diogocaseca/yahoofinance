@@ -27,6 +27,21 @@ from .const import (
     DOMAIN,
 )
 
+OPT_SYMBOLS = "Symbols"
+OPT_MANUAL_SCAN = "Disable automatic updates (global)"
+OPT_SCAN_SECONDS = "Global automatic update interval (seconds)"
+OPT_TARGET_CURRENCY = "Target currency (optional)"
+OPT_SHOW_TRENDING = "Show trending icon"
+OPT_SHOW_CURRENCY_SYMBOL = "Use currency symbol as unit"
+OPT_DECIMAL_PLACES = "Decimal places"
+OPT_INCLUDE_FIFTY_DAY = "Include 50-day values"
+OPT_INCLUDE_POST = "Include post-market values"
+OPT_INCLUDE_PRE = "Include pre-market values"
+OPT_INCLUDE_TWO_HUNDRED_DAY = "Include 200-day values"
+OPT_INCLUDE_FIFTY_TWO_WEEK = "Include 52-week values"
+OPT_INCLUDE_DIVIDEND = "Include dividend values"
+OPT_SHOW_OFF_MARKET = "Use latest off-market value as state"
+
 
 def _parse_symbols(raw_symbols: str) -> list[str]:
     """Parse a free-text list of symbols into uppercase unique values."""
@@ -90,17 +105,40 @@ class YahooFinanceOptionsFlow(OptionsFlowWithConfigEntry):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            symbols = _parse_symbols(user_input[CONF_SYMBOLS])
+            symbols = _parse_symbols(user_input[OPT_SYMBOLS])
             if len(symbols) == 0:
                 errors["base"] = "symbols_required"
             else:
-                user_input[CONF_SYMBOLS] = symbols
+                options_data = {
+                    CONF_SYMBOLS: symbols,
+                    CONF_MANUAL_SCAN_INTERVAL: user_input[OPT_MANUAL_SCAN],
+                    CONF_SCAN_INTERVAL_SECONDS: user_input[OPT_SCAN_SECONDS],
+                    CONF_TARGET_CURRENCY: user_input[OPT_TARGET_CURRENCY],
+                    CONF_SHOW_TRENDING_ICON: user_input[OPT_SHOW_TRENDING],
+                    CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT: user_input[
+                        OPT_SHOW_CURRENCY_SYMBOL
+                    ],
+                    CONF_DECIMAL_PLACES: user_input[OPT_DECIMAL_PLACES],
+                    CONF_INCLUDE_FIFTY_DAY_VALUES: user_input[OPT_INCLUDE_FIFTY_DAY],
+                    CONF_INCLUDE_POST_VALUES: user_input[OPT_INCLUDE_POST],
+                    CONF_INCLUDE_PRE_VALUES: user_input[OPT_INCLUDE_PRE],
+                    CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES: user_input[
+                        OPT_INCLUDE_TWO_HUNDRED_DAY
+                    ],
+                    CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES: user_input[
+                        OPT_INCLUDE_FIFTY_TWO_WEEK
+                    ],
+                    CONF_INCLUDE_DIVIDEND_VALUES: user_input[OPT_INCLUDE_DIVIDEND],
+                    CONF_SHOW_OFF_MARKET_VALUES: user_input[OPT_SHOW_OFF_MARKET],
+                }
 
-            target_currency = user_input.get(CONF_TARGET_CURRENCY)
-            if isinstance(target_currency, str):
-                user_input[CONF_TARGET_CURRENCY] = target_currency.upper().strip()
+                target_currency = options_data.get(CONF_TARGET_CURRENCY)
+                if isinstance(target_currency, str):
+                    options_data[CONF_TARGET_CURRENCY] = (
+                        target_currency.upper().strip()
+                    )
 
-                return self.async_create_entry(title="", data=user_input)
+                return self.async_create_entry(title="", data=options_data)
 
         options = DEFAULT_ENTRY_OPTIONS.copy()
         options.update(self.config_entry.options)
@@ -112,59 +150,59 @@ class YahooFinanceOptionsFlow(OptionsFlowWithConfigEntry):
             data_schema=vol.Schema(
                 {
                     vol.Required(
-                        CONF_SYMBOLS,
+                        OPT_SYMBOLS,
                         default=symbols_as_text,
                     ): str,
                     vol.Required(
-                        CONF_MANUAL_SCAN_INTERVAL,
+                        OPT_MANUAL_SCAN,
                         default=options[CONF_MANUAL_SCAN_INTERVAL],
                     ): bool,
                     vol.Required(
-                        CONF_SCAN_INTERVAL_SECONDS,
+                        OPT_SCAN_SECONDS,
                         default=options[CONF_SCAN_INTERVAL_SECONDS],
                     ): vol.All(vol.Coerce(int), vol.Range(min=30)),
                     vol.Optional(
-                        CONF_TARGET_CURRENCY,
+                        OPT_TARGET_CURRENCY,
                         default=options.get(CONF_TARGET_CURRENCY) or "",
                     ): str,
                     vol.Required(
-                        CONF_SHOW_TRENDING_ICON,
+                        OPT_SHOW_TRENDING,
                         default=options[CONF_SHOW_TRENDING_ICON],
                     ): bool,
                     vol.Required(
-                        CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT,
+                        OPT_SHOW_CURRENCY_SYMBOL,
                         default=options[CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT],
                     ): bool,
                     vol.Required(
-                        CONF_DECIMAL_PLACES,
+                        OPT_DECIMAL_PLACES,
                         default=options[CONF_DECIMAL_PLACES],
                     ): vol.Coerce(int),
                     vol.Required(
-                        CONF_INCLUDE_FIFTY_DAY_VALUES,
+                        OPT_INCLUDE_FIFTY_DAY,
                         default=options[CONF_INCLUDE_FIFTY_DAY_VALUES],
                     ): bool,
                     vol.Required(
-                        CONF_INCLUDE_POST_VALUES,
+                        OPT_INCLUDE_POST,
                         default=options[CONF_INCLUDE_POST_VALUES],
                     ): bool,
                     vol.Required(
-                        CONF_INCLUDE_PRE_VALUES,
+                        OPT_INCLUDE_PRE,
                         default=options[CONF_INCLUDE_PRE_VALUES],
                     ): bool,
                     vol.Required(
-                        CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES,
+                        OPT_INCLUDE_TWO_HUNDRED_DAY,
                         default=options[CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES],
                     ): bool,
                     vol.Required(
-                        CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES,
+                        OPT_INCLUDE_FIFTY_TWO_WEEK,
                         default=options[CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES],
                     ): bool,
                     vol.Required(
-                        CONF_INCLUDE_DIVIDEND_VALUES,
+                        OPT_INCLUDE_DIVIDEND,
                         default=options[CONF_INCLUDE_DIVIDEND_VALUES],
                     ): bool,
                     vol.Required(
-                        CONF_SHOW_OFF_MARKET_VALUES,
+                        OPT_SHOW_OFF_MARKET,
                         default=options[CONF_SHOW_OFF_MARKET_VALUES],
                     ): bool,
                 }
