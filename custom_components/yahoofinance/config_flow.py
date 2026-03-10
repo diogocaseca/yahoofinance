@@ -78,7 +78,7 @@ class YahooFinanceConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Create the options flow."""
-        return YahooFinanceOptionsFlow()
+        return YahooFinanceOptionsFlow(config_entry)
 
 
 class YahooFinanceOptionsFlow(OptionsFlowWithConfigEntry):
