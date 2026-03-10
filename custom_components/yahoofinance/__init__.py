@@ -207,7 +207,12 @@ async def _async_setup_coordinators(
 
     crumb_coordinator = CrumbCoordinator.get_static_instance(hass, websession)
 
-    crumb = await crumb_coordinator.try_get_crumb_cookies()
+    try:
+        crumb = await crumb_coordinator.try_get_crumb_cookies()
+    except RuntimeError as ex:
+        LOGGER.warning("Unable to get crumb cookies: %s", ex)
+        return None
+
     if crumb is None:
         return None
 

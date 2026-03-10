@@ -76,7 +76,18 @@ class CrumbCoordinator:
         """Get the singleton static CrumbCoordinator instance."""
         if CrumbCoordinator._instance is None:
             CrumbCoordinator._instance = CrumbCoordinator(hass, websession)
-        return CrumbCoordinator._instance
+            return CrumbCoordinator._instance
+
+        instance = CrumbCoordinator._instance
+        instance._hass = hass
+
+        # Config entry reload can leave the previous session closed; always switch to
+        # the fresh Home Assistant-managed session for new requests.
+        if instance._websession is not websession or instance._websession.closed:
+            instance._websession = websession
+            instance.reset()
+
+        return instance
 
     def reset(self) -> None:
         """Reset crumb and cookies."""
