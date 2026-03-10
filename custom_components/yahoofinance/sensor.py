@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.sensor import (
     DOMAIN as SENSOR_DOMAIN,
     SensorEntity,
@@ -16,7 +17,7 @@ from homeassistant.const import ATTR_ATTRIBUTION
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType, StateType
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -50,6 +51,7 @@ from .const import (
     DOMAIN,
     HASS_DATA_CONFIG,
     HASS_DATA_COORDINATORS,
+    HASS_DATA_ENTRIES,
     LOGGER,
     NUMERIC_DATA_GROUPS,
     PERCENTAGE_DATA_KEYS_NEEDING_MULTIPLICATION,
@@ -61,32 +63,33 @@ from .dataclasses import SymbolDefinition
 ENTITY_ID_FORMAT = SENSOR_DOMAIN + "." + DOMAIN + "_{}"
 
 
-async def async_setup_platform(
+async def async_setup_entry(
     hass: HomeAssistant,
-    config: ConfigType,
+    entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-):
-    """Set up the Yahoo Finance sensor platform."""
+) -> None:
+    """Set up Yahoo Finance sensors from a config entry."""
 
-    coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = hass.data[DOMAIN][
+    entry_data = hass.data[DOMAIN][HASS_DATA_ENTRIES][entry.entry_id]
+    coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = entry_data[
         HASS_DATA_COORDINATORS
     ]
-    domain_config = hass.data[DOMAIN][HASS_DATA_CONFIG]
+    domain_config = entry_data[HASS_DATA_CONFIG]
     symbol_definitions: list[SymbolDefinition] = domain_config[CONF_SYMBOLS]
-
-    # We don't know the currency of a symbol so can't added conversion symbols upfront
 
     sensors = [
         YahooFinanceSensor(
-            hass, coordinators[symbol.scan_interval], symbol, domain_config
+            hass,
+            coordinators[symbol.scan_interval],
+            coordinators,
+            symbol,
+            domain_config,
         )
         for symbol in symbol_definitions
     ]
 
-    # We have already invoked async_refresh on coordinator, so don't update_before_add
     async_add_entities(sensors, update_before_add=False)
-    LOGGER.info("Entities added for %s", [item.symbol for item in symbol_definitions])
+    LOGGER.info("Entities added for entry %s", entry.entry_id)
 
 
 class YahooFinanceSensor(CoordinatorEntity, SensorEntity):
@@ -111,6 +114,7 @@ class YahooFinanceSensor(CoordinatorEntity, SensorEntity):
         self,
         hass: HomeAssistant,
         coordinator: YahooSymbolUpdateCoordinator,
+        coordinators: dict[timedelta, YahooSymbolUpdateCoordinator],
         symbol_definition: SymbolDefinition,
         domain_config: dict,
     ) -> None:
@@ -119,6 +123,7 @@ class YahooFinanceSensor(CoordinatorEntity, SensorEntity):
 
         # Entity.hass is only populated after async_add_entities, use local reference to hass
         self._hass = hass
+        self._coordinators = coordinators
 
         symbol = symbol_definition.symbol
         self._symbol = symbol
@@ -267,17 +272,12 @@ class YahooFinanceSensor(CoordinatorEntity, SensorEntity):
 
     def _find_symbol_data(self, symbol: str) -> any | None:
         """Find data for the specified symbol in all coordinators."""
-        coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = self._hass.data[
-            DOMAIN
-        ][HASS_DATA_COORDINATORS]
-
-        if coordinators:
-            for coordinator in coordinators.values():
-                data = coordinator.data
-                if data is not None:
-                    symbol_data = data.get(symbol)
-                    if symbol_data is not None:
-                        return symbol_data
+        for coordinator in self._coordinators.values():
+            data = coordinator.data
+            if data is not None:
+                symbol_data = data.get(symbol)
+                if symbol_data is not None:
+                    return symbol_data
 
         return None
 

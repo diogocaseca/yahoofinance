@@ -28,6 +28,11 @@ ATTR_DIVIDEND_YIELD: Final = "dividendYield"
 # Hass data
 HASS_DATA_CONFIG: Final = "config"
 HASS_DATA_COORDINATORS: Final = "coordinators"
+HASS_DATA_ENTRIES: Final = "entries"
+HASS_DATA_SERVICES_REGISTERED: Final = "services_registered"
+
+CONF_MANUAL_SCAN_INTERVAL: Final = "manual_scan_interval"
+CONF_SCAN_INTERVAL_SECONDS: Final = "scan_interval_seconds"
 
 # JSON data pieces
 DATA_CURRENCY_SYMBOL: Final = "currency"
@@ -61,7 +66,7 @@ CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES: Final = "include_fifty_two_week_values"
 CONF_INCLUDE_DIVIDEND_VALUES: Final = "include_dividend_values"
 CONF_SHOW_TRENDING_ICON: Final = "show_trending_icon"
 CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT = "show_currency_symbol_as_unit"
-CONF_SHOW_OFF_MARKET_VALUES= "show_off_market_values"
+CONF_SHOW_OFF_MARKET_VALUES = "show_off_market_values"
 CONF_TARGET_CURRENCY: Final = "target_currency"
 CONF_NO_UNIT: Final = "no_unit"
 

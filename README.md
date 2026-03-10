@@ -16,14 +16,13 @@ This can be installed through [HACS](https://hacs.xyz/) or by copying all the fi
 
 ## Configuration
 
-Define the symbols to be tracked and optional parameters in `configuration.yaml`.
+This integration is configured from the Home Assistant UI only.
 
-```yaml
-# Example configuration.yaml entry
-yahoofinance:
-  symbols:
-    - ISTNX
-```
+- Initial setup (`Add Integration`): only `symbols` is required.
+- Advanced setup (`Configure` button after adding): all optional settings
+  like update interval, decimal places, and include/show flags.
+
+You can enter symbols separated by comma or new line.
 
 The above configuration will generate an entity with the id `sensor.yahoofinance_istnx` and current value as the state along with these attributes:
 
@@ -90,39 +89,22 @@ friendly_name: Delaware Ivy Science and Techno
 
 - Data fetch interval can be adjusted by specifying the `scan_interval` setting whose default value is 6 hours and the minimum value is 30 seconds.
 
-  ```yaml
-  scan_interval:
-    hours: 4
-  ```
+  Set `automatic update interval (seconds)` in the integration options.
 
   You can disable automatic update by passing `manual` for `scan_interval`.
 
 - Trending icons (trending-up, trending-down or trending-neutral) can be displayed instead of currency based icon by specifying `show_trending_icon`.
-  ```yaml
-  show_trending_icon: true
-  ```
+  Enable `show_trending_icon` in the integration options.
 - All numeric values are by default rounded to 2 places of decimal. This can be adjusted by the `decimal_places` setting. A value of 0 will return in integer values and -1 will suppress rounding.
 
-  ```yaml
-  decimal_places: 3
-  ```
+  Set `decimal_places` in the integration options.
 
 - The dividend, fifty_day, post, pre and two_hundred attributes can be included as following. They are all excluded by default.
-  ```yaml
-  include_dividend_values: true
-  include_fifty_day_values: true
-  include_fifty_two_week_values: true
-  include_post_values: true
-  include_pre_values: true
-  include_two_hundred_day_values: true
-  ```
+  Enable the corresponding `include_*` options in the integration settings.
 
 - Show post, pre market prices in the default sensor value, by default disabled. When enabled, it is recommended to also set `include_post_values` and `include_pre_values` to `true`.
-  ```yaml
-  include_post_values: true
-  include_pre_values: true
-  show_off_market_values: true
-  ```
+  Enable `include_post_values`, `include_pre_values` and
+  `show_off_market_values` in options.
 
   ### Optional attributes
   #### include_dividend_values
@@ -162,78 +144,31 @@ friendly_name: Delaware Ivy Science and Techno
   - twoHundredDayAverageChange
   - twoHundredDayAverageChangePercent
 
-- The currency symbol e.g. $ can be show as the unit instead of USD by setting `show_currency_symbol_as_unit: true`.
+- The currency symbol e.g. $ can be shown as the unit instead of USD by
+  enabling `show_currency_symbol_as_unit`.
   - **Note:** Using this setting will generate a warning like `The unit of this entity changed to '$' which can't be converted ...` You will have to manually resolve it by picking the first option to update the unit of the historicalvalues without convertion. This can be done from `Developer tools > STATISTICS`.
 
 
 ### Symbol
 
-- An alternate target currency can be specified for a symbol using the extended declaration format. Here, the symbol EMIM.L is reported in USD but will be presented in EUR. The conversion would be based on the value of the symbol USDEUR=X.
-
-  ```yaml
-  symbols:
-    - symbol: EMIM.L
-      target_currency: EUR
-  ```
+- An alternate target currency can be configured globally through the
+  `target_currency` option.
 
   If data for the target currency is not found, then the display will remain in original currency. The conversion is only applied on the attributes representing prices.
 
-- The data fetch interval can be fine tuned at symbol level. By default, the `scan_interval` from the integration is used. The minimum value is still 30 seconds. Symbols with the same `scan_interval` are grouped together and loaded through one data coordinator.
+- The data fetch interval is configured at integration level in options.
 
-  If conversion data needs to be loaded, then that too will get added to the same coordinator. However, if conversion symbol is found in another coordinator, then that will get used.
-
-  ```yaml
-  scan_interval:
-    hours: 4
-  ```
-
-  ```yaml
-  scan_interval:
-    minutes: 5
-  ```
-
-  ```yaml
-  scan_interval: 300
-  ```
-
-- The `unit_of_measurement` can be suppressed by setting `no_unit: true`. This could be used for index symbols if no currency unit is desired to be displayed.
-
-  ```yaml
-    - symbol: BND
-      no_unit: true
-  ```
-  - **Note:** Using this setting will generate a warning like `The unit of sensor.yahoofinance_gspc cannot be converted to the unit of previously compiled statistics (USD). Generation of long term statistics will be suppressed unless the unit changes back to USD or a compatible unit.` You will have to manually resolve it as mentioned in the message otherwise new data might not show in cards.
+- Per-symbol `no_unit` customization is no longer supported through YAML.
 
 ## Examples
 
-- The symbol can also represent a financial index such as [this](https://finance.yahoo.com/world-indices/).
-
-  ```yaml
-  symbols:
-    - ^SSMI
-  ```
+- The symbol can also represent a financial index such as
+  [this](https://finance.yahoo.com/world-indices/).
 
 - Yahoo also provides currency conversion as a symbol.
 
-  ```yaml
-  symbols:
-    - GBPUSD=X
-  ```
-
-- A complete sample
-
-```
-yahoofinance:
-  include_post_values: false
-  include_pre_values: false
-  show_trending_icon: true
-  decimal_places: 2
-  scan_interval:
-    hours: 4
-  symbols:
-    - USDINR=X
-    - UNP
-```
+- A complete sample setup can be created from UI by adding symbols first and
+  then enabling optional values in `Configure`.
 
 - The trending icons themselves cannot be colored but colors can be added using [lovelace-card-mod](https://github.com/thomasloven/lovelace-card-mod). Here [auto-entities](https://github.com/thomasloven/lovelace-auto-entities) is being used to simplify the code.
 
@@ -257,8 +192,6 @@ yahoofinance:
   ```
 
 ## Services
-
-* The integration configuration can be reloaded from the `YAHOO FINANCE` option on `YAML` tab in `Developer tools`.
 
 * The component exposes the service `yahoofinance.refresh_symbols` which can be used to refresh all the data.
 

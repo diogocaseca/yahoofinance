@@ -5,19 +5,13 @@ https://github.com/iprak/yahoofinance
 
 from __future__ import annotations
 
-import contextlib
 from datetime import timedelta
 
-import voluptuous as vol
-
-from homeassistant.const import CONF_SCAN_INTERVAL, SERVICE_RELOAD, Platform
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_SCAN_INTERVAL, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import discovery, entity_registry as er
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.event import async_call_later
-from homeassistant.helpers.reload import async_integration_yaml_config
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -28,7 +22,8 @@ from .const import (
     CONF_INCLUDE_POST_VALUES,
     CONF_INCLUDE_PRE_VALUES,
     CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES,
-    CONF_NO_UNIT,
+    CONF_MANUAL_SCAN_INTERVAL,
+    CONF_SCAN_INTERVAL_SECONDS,
     CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT,
     CONF_SHOW_OFF_MARKET_VALUES,
     CONF_SHOW_TRENDING_ICON,
@@ -41,7 +36,6 @@ from .const import (
     DEFAULT_CONF_INCLUDE_POST_VALUES,
     DEFAULT_CONF_INCLUDE_PRE_VALUES,
     DEFAULT_CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES,
-    DEFAULT_CONF_NO_UNIT,
     DEFAULT_CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT,
     DEFAULT_CONF_SHOW_OFF_MARKET_VALUES,
     DEFAULT_CONF_SHOW_TRENDING_ICON,
@@ -49,6 +43,8 @@ from .const import (
     DOMAIN,
     HASS_DATA_CONFIG,
     HASS_DATA_COORDINATORS,
+    HASS_DATA_ENTRIES,
+    HASS_DATA_SERVICES_REGISTERED,
     LOGGER,
     MANUAL_SCAN_INTERVAL,
     MAX_LINE_SIZE,
@@ -58,165 +54,141 @@ from .const import (
 from .coordinator import CrumbCoordinator, YahooSymbolUpdateCoordinator
 from .dataclasses import SymbolDefinition
 
-BASIC_SYMBOL_SCHEMA = vol.All(cv.string, vol.Upper)
+PLATFORMS: list[Platform] = [Platform.SENSOR]
+
+DEFAULT_ENTRY_OPTIONS = {
+    CONF_SCAN_INTERVAL_SECONDS: int(DEFAULT_SCAN_INTERVAL.total_seconds()),
+    CONF_MANUAL_SCAN_INTERVAL: False,
+    CONF_TARGET_CURRENCY: None,
+    CONF_SHOW_TRENDING_ICON: DEFAULT_CONF_SHOW_TRENDING_ICON,
+    CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT: DEFAULT_CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT,
+    CONF_DECIMAL_PLACES: DEFAULT_CONF_DECIMAL_PLACES,
+    CONF_INCLUDE_FIFTY_DAY_VALUES: DEFAULT_CONF_INCLUDE_FIFTY_DAY_VALUES,
+    CONF_INCLUDE_POST_VALUES: DEFAULT_CONF_INCLUDE_POST_VALUES,
+    CONF_INCLUDE_PRE_VALUES: DEFAULT_CONF_INCLUDE_PRE_VALUES,
+    CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES: DEFAULT_CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES,
+    CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES: DEFAULT_CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES,
+    CONF_INCLUDE_DIVIDEND_VALUES: DEFAULT_CONF_INCLUDE_DIVIDEND_VALUES,
+    CONF_SHOW_OFF_MARKET_VALUES: DEFAULT_CONF_SHOW_OFF_MARKET_VALUES,
+}
 
 
-def minimum_scan_interval(value: timedelta) -> timedelta:
-    """Validate scan_interval is the minimum value."""
-    if value < MINIMUM_SCAN_INTERVAL:
-        raise vol.Invalid("Scan interval should be at least 30 seconds")
-    return value
+CONFIG_SCHEMA = {}
 
 
-MANUAL_SCAN_INTERVAL_SCHEMA = vol.All(vol.Lower, MANUAL_SCAN_INTERVAL)
-CUSTOM_SCAN_INTERVAL_SCHEMA = vol.All(cv.time_period, minimum_scan_interval)
-SCAN_INTERVAL_SCHEMA = vol.Any(MANUAL_SCAN_INTERVAL_SCHEMA, CUSTOM_SCAN_INTERVAL_SCHEMA)
-
-COMPLEX_SYMBOL_SCHEMA = vol.All(
-    dict,
-    vol.Schema(
-        {
-            vol.Required("symbol"): BASIC_SYMBOL_SCHEMA,
-            vol.Optional(CONF_TARGET_CURRENCY): BASIC_SYMBOL_SCHEMA,
-            vol.Optional(CONF_SCAN_INTERVAL): SCAN_INTERVAL_SCHEMA,
-            vol.Optional(CONF_NO_UNIT, default=DEFAULT_CONF_NO_UNIT): cv.boolean,
-        }
-    ),
-)
-
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: vol.Schema(
-            {
-                vol.Required(CONF_SYMBOLS): vol.All(
-                    cv.ensure_list,
-                    [vol.Any(BASIC_SYMBOL_SCHEMA, COMPLEX_SYMBOL_SCHEMA)],
-                ),
-                vol.Optional(
-                    CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
-                ): SCAN_INTERVAL_SCHEMA,
-                vol.Optional(CONF_TARGET_CURRENCY): vol.All(cv.string, vol.Upper),
-                vol.Optional(
-                    CONF_SHOW_TRENDING_ICON, default=DEFAULT_CONF_SHOW_TRENDING_ICON
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT,
-                    default=DEFAULT_CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT,
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_DECIMAL_PLACES, default=DEFAULT_CONF_DECIMAL_PLACES
-                ): vol.Coerce(int),
-                vol.Optional(
-                    CONF_INCLUDE_FIFTY_DAY_VALUES,
-                    default=DEFAULT_CONF_INCLUDE_FIFTY_DAY_VALUES,
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_INCLUDE_POST_VALUES, default=DEFAULT_CONF_INCLUDE_POST_VALUES
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_INCLUDE_PRE_VALUES, default=DEFAULT_CONF_INCLUDE_PRE_VALUES
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES,
-                    default=DEFAULT_CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES,
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES,
-                    default=DEFAULT_CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES,
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_INCLUDE_DIVIDEND_VALUES,
-                    default=DEFAULT_CONF_INCLUDE_DIVIDEND_VALUES,
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_SHOW_OFF_MARKET_VALUES,
-                    default=DEFAULT_CONF_SHOW_OFF_MARKET_VALUES,
-                ): cv.boolean,
-            }
-        )
-    },
-    # The complete HA configuration is passed down to`async_setup`, allow the extra keys.
-    extra=vol.ALLOW_EXTRA,
-)
-
-
-def normalize_input_symbols(defined_symbols: list) -> list[SymbolDefinition]:
-    """Normalize input and remove duplicates."""
-    symbols = set()
+def normalize_input_symbols(defined_symbols: list[str]) -> list[SymbolDefinition]:
+    """Normalize symbols and remove duplicates."""
+    symbols: set[str] = set()
     symbol_definitions: list[SymbolDefinition] = []
 
     for value in defined_symbols:
-        if isinstance(value, str):
-            if value not in symbols:
-                symbols.add(value)
-                symbol_definitions.append(SymbolDefinition(value))
-        else:
-            symbol = value["symbol"]
-            if symbol not in symbols:
-                symbols.add(symbol)
-                symbol_definitions.append(
-                    SymbolDefinition(
-                        symbol,
-                        target_currency=value.get(CONF_TARGET_CURRENCY),
-                        scan_interval=value.get(CONF_SCAN_INTERVAL),
-                        no_unit=value.get(CONF_NO_UNIT),
-                    )
-                )
+        symbol = value.upper()
+        if symbol in symbols:
+            continue
+        symbols.add(symbol)
+        symbol_definitions.append(SymbolDefinition(symbol))
 
     return symbol_definitions
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the component."""
+    """Set up the component (UI configuration only)."""
 
-    await _async_process_yaml(hass, config)
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault(HASS_DATA_ENTRIES, {})
+
+    _async_register_services(hass)
+
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Yahoo Finance from a config entry."""
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault(HASS_DATA_ENTRIES, {})
+
+    _async_register_services(hass)
+
+    domain_config = _domain_config_from_entry(entry)
+    coordinators = await _async_setup_coordinators(
+        hass,
+        domain_config[CONF_SYMBOLS],
+        domain_config[CONF_SCAN_INTERVAL],
+    )
+
+    if coordinators is None:
+        raise ConfigEntryNotReady("Unable to get Yahoo Finance crumb")
+
+    hass.data[DOMAIN][HASS_DATA_ENTRIES][entry.entry_id] = {
+        HASS_DATA_CONFIG: domain_config,
+        HASS_DATA_COORDINATORS: coordinators,
+    }
+
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if not unload_ok:
+        return False
+
+    entry_data = hass.data.get(DOMAIN, {}).get(HASS_DATA_ENTRIES, {}).pop(
+        entry.entry_id, None
+    )
+    if entry_data:
+        await _async_shutdown_coordinators(entry_data.get(HASS_DATA_COORDINATORS, {}))
+
+    return True
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry when options change."""
+
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+def _async_register_services(hass: HomeAssistant) -> None:
+    """Register services once for both YAML and UI configured entries."""
+
+    if hass.data[DOMAIN].get(HASS_DATA_SERVICES_REGISTERED):
+        return
 
     async def handle_refresh_symbols(_call: ServiceCall) -> None:
         """Refresh symbol data."""
         LOGGER.info("Processing refresh_symbols")
 
-        # Always use latest coordinators to handle config reload
-        coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = hass.data[DOMAIN][
-            HASS_DATA_COORDINATORS
-        ]
+        coordinators: dict[
+            str | timedelta, YahooSymbolUpdateCoordinator
+        ] = hass.data[
+            DOMAIN
+        ].get(HASS_DATA_COORDINATORS, {})
         if coordinators:
             for coordinator in coordinators.values():
                 await coordinator.async_refresh()
 
-    async def _async_reload_service_handler(service: ServiceCall) -> None:
-        """Handle reload service call."""
-        reload_config = None
-        with contextlib.suppress(HomeAssistantError):
-            reload_config = await async_integration_yaml_config(hass, DOMAIN)
-        if reload_config is None:
-            return
-
-        _remove_all_existing_symbols(hass)
-        await _async_process_yaml(hass, reload_config)
+        entries = hass.data[DOMAIN].get(HASS_DATA_ENTRIES, {})
+        for entry_data in entries.values():
+            for coordinator in entry_data.get(HASS_DATA_COORDINATORS, {}).values():
+                await coordinator.async_refresh()
 
     hass.services.async_register(DOMAIN, SERVICE_REFRESH, handle_refresh_symbols)
-    hass.services.async_register(DOMAIN, SERVICE_RELOAD, _async_reload_service_handler)
-    return True
+    hass.data[DOMAIN][HASS_DATA_SERVICES_REGISTERED] = True
 
 
-async def _async_process_yaml(hass: HomeAssistant, config: ConfigType) -> None:
-    """Process YAML configuration."""
-    domain_config = config.get(DOMAIN, {})
-    defined_symbols = domain_config.get(CONF_SYMBOLS, [])
+async def _async_setup_coordinators(
+    hass: HomeAssistant,
+    symbol_definitions: list[SymbolDefinition],
+    global_scan_interval: str | timedelta,
+) -> dict[str | timedelta, YahooSymbolUpdateCoordinator] | None:
+    """Create and refresh coordinators for symbols grouped by scan interval."""
 
-    symbol_definitions: list[SymbolDefinition]
-    symbol_definitions = normalize_input_symbols(defined_symbols)
-    domain_config[CONF_SYMBOLS] = symbol_definitions
-
-    global_scan_interval = domain_config.get(CONF_SCAN_INTERVAL)
-
-    # Populate parsed value into domain_config
-    domain_config[CONF_SCAN_INTERVAL] = global_scan_interval
-
-    # Group symbols by scan_interval
-    symbols_by_scan_interval: dict[timedelta, list[str]] = {}
+    symbols_by_scan_interval: dict[str | timedelta, list[str]] = {}
     for symbol in symbol_definitions:
-        # Use integration level scan_interval if none defined
         if symbol.scan_interval is None:
             symbol.scan_interval = global_scan_interval
 
@@ -227,92 +199,108 @@ async def _async_process_yaml(hass: HomeAssistant, config: ConfigType) -> None:
 
     LOGGER.info("Total %d unique scan intervals", len(symbols_by_scan_interval))
 
-    # Pass down the config to platforms.
-    hass.data[DOMAIN] = {
-        HASS_DATA_CONFIG: domain_config,
+    # Testing showed that the response header for initial request can be up to 40KB.
+    websession = async_create_clientsession(
+        hass, max_field_size=MAX_LINE_SIZE, max_line_size=MAX_LINE_SIZE
+    )
+
+    crumb_coordinator = CrumbCoordinator.get_static_instance(hass, websession)
+
+    crumb = await crumb_coordinator.try_get_crumb_cookies()
+    if crumb is None:
+        return None
+
+    coordinators: dict[str | timedelta, YahooSymbolUpdateCoordinator] = {}
+    for key_scan_interval, symbols in symbols_by_scan_interval.items():
+        LOGGER.info(
+            "Creating coordinator with scan_interval %s for symbols %s",
+            key_scan_interval,
+            symbols,
+        )
+        coordinator = YahooSymbolUpdateCoordinator(
+            symbols, hass, key_scan_interval, crumb_coordinator, websession
+        )
+        coordinators[key_scan_interval] = coordinator
+
+        LOGGER.info(
+            "Requesting initial data from coordinator with update interval of %s",
+            key_scan_interval,
+        )
+        await coordinator.async_refresh()
+
+    for coordinator in coordinators.values():
+        if not coordinator.last_update_success:
+            LOGGER.debug("Coordinator did not report any data, requesting async_refresh")
+            hass.async_create_task(coordinator.async_request_refresh())
+
+    return coordinators
+
+
+async def _async_shutdown_coordinators(
+    coordinators: dict[str | timedelta, YahooSymbolUpdateCoordinator],
+) -> None:
+    """Shutdown coordinator resources."""
+
+    for coordinator in coordinators.values():
+        await coordinator.async_shutdown()
+
+
+def _domain_config_from_entry(entry: ConfigEntry) -> dict:
+    """Build runtime domain config from config entry data and options."""
+
+    options = DEFAULT_ENTRY_OPTIONS.copy()
+    options.update(entry.options)
+
+    scan_interval: str | timedelta = MANUAL_SCAN_INTERVAL
+    if not options[CONF_MANUAL_SCAN_INTERVAL]:
+        scan_seconds_value = options.get(
+            CONF_SCAN_INTERVAL_SECONDS,
+            int(DEFAULT_SCAN_INTERVAL.total_seconds()),
+        )
+        if scan_seconds_value is None:
+            scan_seconds_value = int(DEFAULT_SCAN_INTERVAL.total_seconds())
+
+        scan_seconds = max(
+            int(scan_seconds_value),
+            int(MINIMUM_SCAN_INTERVAL.total_seconds()),
+        )
+        scan_interval = timedelta(seconds=scan_seconds)
+
+    symbols = [symbol.upper() for symbol in entry.data.get(CONF_SYMBOLS, [])]
+    symbol_definitions = normalize_input_symbols(symbols)
+
+    target_currency = options.get(CONF_TARGET_CURRENCY)
+    if isinstance(target_currency, str) and target_currency != "":
+        target_currency = target_currency.upper()
+    elif target_currency == "":
+        target_currency = None
+
+    domain_config = {
+        CONF_SYMBOLS: symbol_definitions,
+        CONF_SCAN_INTERVAL: scan_interval,
+        CONF_TARGET_CURRENCY: target_currency,
+        CONF_SHOW_TRENDING_ICON: options[CONF_SHOW_TRENDING_ICON],
+        CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT: options[CONF_SHOW_CURRENCY_SYMBOL_AS_UNIT],
+        CONF_DECIMAL_PLACES: options[CONF_DECIMAL_PLACES],
+        CONF_INCLUDE_FIFTY_DAY_VALUES: options[CONF_INCLUDE_FIFTY_DAY_VALUES],
+        CONF_INCLUDE_POST_VALUES: options[CONF_INCLUDE_POST_VALUES],
+        CONF_INCLUDE_PRE_VALUES: options[CONF_INCLUDE_PRE_VALUES],
+        CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES: options[
+            CONF_INCLUDE_TWO_HUNDRED_DAY_VALUES
+        ],
+        CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES: options[
+            CONF_INCLUDE_FIFTY_TWO_WEEK_VALUES
+        ],
+        CONF_INCLUDE_DIVIDEND_VALUES: options[CONF_INCLUDE_DIVIDEND_VALUES],
+        CONF_SHOW_OFF_MARKET_VALUES: options[CONF_SHOW_OFF_MARKET_VALUES],
     }
 
-    async def _setup_coordinators(now=None) -> None:
-        # Testing showed that the response header for initial request can up to 40KB
-        websession = async_create_clientsession(
-            hass, max_field_size=MAX_LINE_SIZE, max_line_size=MAX_LINE_SIZE
-        )
-
-        # Using a static instance to keep the last successful cookies.
-        crumb_coordinator = CrumbCoordinator.get_static_instance(hass, websession)
-
-        crumb = await crumb_coordinator.try_get_crumb_cookies()  # Get crumb first
-        if crumb is None:
-            delay = crumb_coordinator.retry_duration
-            LOGGER.warning("Unable to get crumb, re-trying in %d seconds", delay)
-            async_call_later(hass, delay, _setup_coordinators)
-            return
-
-        coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = {}
-        for key_scan_interval, symbols in symbols_by_scan_interval.items():
-            LOGGER.info(
-                "Creating coordinator with scan_interval %s for symbols %s",
-                key_scan_interval,
-                symbols,
-            )
-            coordinator = YahooSymbolUpdateCoordinator(
-                symbols, hass, key_scan_interval, crumb_coordinator, websession
-            )
-            coordinators[key_scan_interval] = coordinator
-
-            LOGGER.info(
-                "Requesting initial data from coordinator with update interval of %s",
-                key_scan_interval,
-            )
-            await coordinator.async_refresh()
-
-        # Pass down the coordinator to platforms.
-        hass.data[DOMAIN][HASS_DATA_COORDINATORS] = coordinators
-
-        for coordinator in coordinators.values():
-            if not coordinator.last_update_success:
-                LOGGER.debug(
-                    "Coordinator did not report any data, requesting async_refresh"
-                )
-                hass.async_create_task(coordinator.async_request_refresh())
-
-        hass.async_create_task(
-            discovery.async_load_platform(hass, Platform.SENSOR, DOMAIN, {}, config)
-        )
-
-    await _setup_coordinators()
+    return domain_config
 
 
 def convert_to_float(value) -> float | None:
     """Convert specified value to float."""
     try:
         return float(value)
-    except:  # noqa: E722 pylint: disable=bare-except
+    except Exception:
         return None
-
-
-def _remove_all_existing_symbols(hass: HomeAssistant) -> None:
-    """Remove all exisiting symbols."""
-    coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = hass.data[DOMAIN][
-        HASS_DATA_COORDINATORS
-    ]
-
-    if not coordinators:
-        return
-
-    all_existing_symbols = []
-    for coordinator in coordinators.values():
-        all_existing_symbols.extend(coordinator.get_symbols())
-
-    if not all_existing_symbols:
-        return
-
-    entity_registry = er.async_get(hass)
-
-    for symbol in all_existing_symbols:
-        existing_sensor_id = entity_registry.async_get_entity_id(
-            "sensor", DOMAIN, symbol
-        )
-        if existing_sensor_id:
-            LOGGER.debug("Removing entity %s", existing_sensor_id)
-            entity_registry.async_remove(existing_sensor_id)
