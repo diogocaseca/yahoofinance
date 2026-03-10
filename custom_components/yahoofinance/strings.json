@@ -5,7 +5,9 @@
         "title": "Yahoo Finance",
         "description": "Add symbols to track separated by comma. You can configure advanced options after adding the integration.",
         "data": {
-          "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)"
+          "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)",
+          "manual_scan_interval": "Disable automatic updates",
+          "scan_interval_seconds": "Global automatic update interval (seconds)"
         }
       }
     },
@@ -26,7 +28,7 @@
         "description": "Advanced options for polling and exposed attributes. Scan interval is global for all symbols. Symbols must be separated by comma.",
         "data": {
           "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)",
-          "manual_scan_interval": "Disable automatic updates (global)",
+          "manual_scan_interval": "Disable automatic updates",
           "scan_interval_seconds": "Global automatic update interval (seconds)",
           "target_currency": "Target currency (optional)",
           "show_trending_icon": "Show trending icon",

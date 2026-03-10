@@ -255,6 +255,7 @@ def _domain_config_from_entry(entry: ConfigEntry) -> dict:
     """Build runtime domain config from config entry data and options."""
 
     options = DEFAULT_ENTRY_OPTIONS.copy()
+    options.update(entry.data)
     options.update(entry.options)
 
     scan_interval: str | timedelta = MANUAL_SCAN_INTERVAL

@@ -28,7 +28,7 @@ from .const import (
 )
 
 OPT_SYMBOLS = "Symbols"
-OPT_MANUAL_SCAN = "Disable automatic updates (global)"
+OPT_MANUAL_SCAN = "Disable automatic updates"
 OPT_SCAN_SECONDS = "Global automatic update interval (seconds)"
 OPT_TARGET_CURRENCY = "Target currency (optional)"
 OPT_SHOW_TRENDING = "Show trending icon"
@@ -77,7 +77,15 @@ class YahooFinanceConfigFlow(ConfigFlow, domain=DOMAIN):
 
                 return self.async_create_entry(
                     title=title,
-                    data={CONF_SYMBOLS: symbols},
+                    data={
+                        CONF_SYMBOLS: symbols,
+                        CONF_MANUAL_SCAN_INTERVAL: user_input[
+                            CONF_MANUAL_SCAN_INTERVAL
+                        ],
+                        CONF_SCAN_INTERVAL_SECONDS: user_input[
+                            CONF_SCAN_INTERVAL_SECONDS
+                        ],
+                    },
                 )
 
         return self.async_show_form(
@@ -85,6 +93,14 @@ class YahooFinanceConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_SYMBOLS): str,
+                    vol.Required(
+                        CONF_MANUAL_SCAN_INTERVAL,
+                        default=DEFAULT_ENTRY_OPTIONS[CONF_MANUAL_SCAN_INTERVAL],
+                    ): bool,
+                    vol.Required(
+                        CONF_SCAN_INTERVAL_SECONDS,
+                        default=DEFAULT_ENTRY_OPTIONS[CONF_SCAN_INTERVAL_SECONDS],
+                    ): vol.All(vol.Coerce(int), vol.Range(min=30)),
                 }
             ),
             errors=errors,
@@ -142,6 +158,7 @@ class YahooFinanceOptionsFlow(OptionsFlowWithConfigEntry):
                 return self.async_create_entry(title="", data=options_data)
 
         options = DEFAULT_ENTRY_OPTIONS.copy()
+        options.update(self.config_entry.data)
         options.update(self.config_entry.options)
         symbols = options.get(CONF_SYMBOLS, self.config_entry.data.get(CONF_SYMBOLS, []))
         symbols_as_text = ", ".join(symbols)

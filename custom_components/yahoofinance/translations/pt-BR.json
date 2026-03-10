@@ -5,7 +5,9 @@
         "title": "Yahoo Finance",
         "description": "Adicione os simbolos separados por virgula. Voce podera configurar opcoes avancadas depois de adicionar a integracao.",
         "data": {
-          "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)"
+          "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)",
+          "manual_scan_interval": "Desativar atualizacao automatica",
+          "scan_interval_seconds": "Intervalo global de atualizacao automatica (segundos)"
         }
       }
     },
@@ -26,7 +28,7 @@
         "description": "Opcoes avancadas de atualizacao e atributos exibidos. O scan interval e global para todos os simbolos. Os simbolos devem ser separados por virgula.",
         "data": {
           "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)",
-          "manual_scan_interval": "Desativar atualizacao automatica (global)",
+          "manual_scan_interval": "Desativar atualizacao automatica",
           "scan_interval_seconds": "Intervalo global de atualizacao automatica (segundos)",
           "target_currency": "Moeda alvo (opcional)",
           "show_trending_icon": "Mostrar icone de tendencia",
