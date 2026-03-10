@@ -12,6 +12,7 @@ from homeassistant.const import CONF_SCAN_INTERVAL, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -73,7 +74,7 @@ DEFAULT_ENTRY_OPTIONS = {
 }
 
 
-CONFIG_SCHEMA = {}
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 def normalize_input_symbols(defined_symbols: list[str]) -> list[SymbolDefinition]:
