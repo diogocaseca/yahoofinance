@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yahoo Finance",
+        "description": "Add symbols to track separated by comma. You can configure advanced options after adding the integration.",
+        "data": {
+          "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)"
+        }
+      }
+    },
+    "error": {
+      "symbols_required": "At least one symbol is required"
+    },
+    "abort": {
+      "already_configured": "Only one Yahoo Finance integration can be configured"
+    }
+  },
+  "options": {
+    "error": {
+      "symbols_required": "At least one symbol is required"
+    },
+    "step": {
+      "init": {
+        "title": "Yahoo Finance options",
+        "description": "Advanced options for polling and exposed attributes. Scan interval is global for all symbols. Symbols must be separated by comma.",
+        "data": {
+          "symbols": "Symbols (separated by comma, e.g.: PETR4.SA, VALE3.SA)",
+          "manual_scan_interval": "Disable automatic updates (global)",
+          "scan_interval_seconds": "Global automatic update interval (seconds)",
+          "target_currency": "Target currency (optional)",
+          "show_trending_icon": "Show trending icon",
+          "show_currency_symbol_as_unit": "Use currency symbol as unit",
+          "decimal_places": "Decimal places",
+          "include_fifty_day_values": "Include 50-day values",
+          "include_post_values": "Include post-market values",
+          "include_pre_values": "Include pre-market values",
+          "include_two_hundred_day_values": "Include 200-day values",
+          "include_fifty_two_week_values": "Include 52-week values",
+          "include_dividend_values": "Include dividend values",
+          "show_off_market_values": "Use latest off-market value as state"
+        }
+      }
+    }
+  }
+}

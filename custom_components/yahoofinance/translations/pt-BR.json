@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yahoo Finance",
+        "description": "Adicione os simbolos separados por virgula. Voce podera configurar opcoes avancadas depois de adicionar a integracao.",
+        "data": {
+          "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)"
+        }
+      }
+    },
+    "error": {
+      "symbols_required": "Informe pelo menos um simbolo"
+    },
+    "abort": {
+      "already_configured": "Somente uma integracao Yahoo Finance pode ser configurada"
+    }
+  },
+  "options": {
+    "error": {
+      "symbols_required": "Informe pelo menos um simbolo"
+    },
+    "step": {
+      "init": {
+        "title": "Opcoes do Yahoo Finance",
+        "description": "Opcoes avancadas de atualizacao e atributos exibidos. O scan interval e global para todos os simbolos. Os simbolos devem ser separados por virgula.",
+        "data": {
+          "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)",
+          "manual_scan_interval": "Desativar atualizacao automatica (global)",
+          "scan_interval_seconds": "Intervalo global de atualizacao automatica (segundos)",
+          "target_currency": "Moeda alvo (opcional)",
+          "show_trending_icon": "Mostrar icone de tendencia",
+          "show_currency_symbol_as_unit": "Usar simbolo da moeda como unidade",
+          "decimal_places": "Casas decimais",
+          "include_fifty_day_values": "Incluir valores de 50 dias",
+          "include_post_values": "Incluir valores de pos-mercado",
+          "include_pre_values": "Incluir valores de pre-mercado",
+          "include_two_hundred_day_values": "Incluir valores de 200 dias",
+          "include_fifty_two_week_values": "Incluir valores de 52 semanas",
+          "include_dividend_values": "Incluir valores de dividendos",
+          "show_off_market_values": "Usar valor mais recente fora do horario como estado"
+        }
+      }
+    }
+  }
+}
