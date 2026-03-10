@@ -71,7 +71,7 @@ async def async_setup_entry(
     """Set up Yahoo Finance sensors from a config entry."""
 
     entry_data = hass.data[DOMAIN][HASS_DATA_ENTRIES][entry.entry_id]
-    coordinators: dict[timedelta, YahooSymbolUpdateCoordinator] = entry_data[
+    coordinators: dict[str | timedelta, YahooSymbolUpdateCoordinator] = entry_data[
         HASS_DATA_COORDINATORS
     ]
     domain_config = entry_data[HASS_DATA_CONFIG]
@@ -82,6 +82,7 @@ async def async_setup_entry(
             hass,
             coordinators[symbol.scan_interval],
             coordinators,
+            entry.entry_id,
             symbol,
             domain_config,
         )
@@ -114,7 +115,8 @@ class YahooFinanceSensor(CoordinatorEntity, SensorEntity):
         self,
         hass: HomeAssistant,
         coordinator: YahooSymbolUpdateCoordinator,
-        coordinators: dict[timedelta, YahooSymbolUpdateCoordinator],
+        coordinators: dict[str | timedelta, YahooSymbolUpdateCoordinator],
+        entry_id: str,
         symbol_definition: SymbolDefinition,
         domain_config: dict,
     ) -> None:
@@ -137,7 +139,7 @@ class YahooFinanceSensor(CoordinatorEntity, SensorEntity):
         self._no_unit = symbol_definition.no_unit
         self._show_off_market_values = domain_config[CONF_SHOW_OFF_MARKET_VALUES]
 
-        self._unique_id = symbol
+        self._unique_id = f"{entry_id}_{symbol}"
         self.entity_id = async_generate_entity_id(ENTITY_ID_FORMAT, symbol, hass=hass)
 
         # _attr_extra_state_attributes is returned by extra_state_attributes

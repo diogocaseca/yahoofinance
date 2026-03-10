@@ -71,11 +71,12 @@ class YahooFinanceConfigFlow(ConfigFlow, domain=DOMAIN):
             if len(symbols) == 0:
                 errors[CONF_SYMBOLS] = "symbols_required"
             else:
-                await self.async_set_unique_id("single_instance")
-                self._abort_if_unique_id_configured()
+                title = "Yahoo Finance"
+                if symbols:
+                    title = f"Yahoo Finance ({symbols[0]})"
 
                 return self.async_create_entry(
-                    title="Yahoo Finance",
+                    title=title,
                     data={CONF_SYMBOLS: symbols},
                 )
 
