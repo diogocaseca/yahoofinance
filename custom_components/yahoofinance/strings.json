@@ -17,13 +17,17 @@
     }
   },
   "options": {
+    "error": {
+      "symbols_required": "At least one symbol is required"
+    },
     "step": {
       "init": {
         "title": "Yahoo Finance options",
-        "description": "Advanced options for polling and exposed attributes.",
+        "description": "Advanced options for polling and exposed attributes. Scan interval is global for all symbols.",
         "data": {
-          "manual_scan_interval": "Disable automatic updates",
-          "scan_interval_seconds": "Automatic update interval (seconds)",
+          "symbols": "Symbols (comma or line separated)",
+          "manual_scan_interval": "Disable automatic updates (global)",
+          "scan_interval_seconds": "Global automatic update interval (seconds)",
           "target_currency": "Target currency (optional)",
           "show_trending_icon": "Show trending icon",
           "show_currency_symbol_as_unit": "Use currency symbol as unit",

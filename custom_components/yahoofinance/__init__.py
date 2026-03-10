@@ -272,7 +272,8 @@ def _domain_config_from_entry(entry: ConfigEntry) -> dict:
         )
         scan_interval = timedelta(seconds=scan_seconds)
 
-    symbols = [symbol.upper() for symbol in entry.data.get(CONF_SYMBOLS, [])]
+    symbols = options.get(CONF_SYMBOLS, entry.data.get(CONF_SYMBOLS, []))
+    symbols = [symbol.upper() for symbol in symbols]
     symbol_definitions = normalize_input_symbols(symbols)
 
     target_currency = options.get(CONF_TARGET_CURRENCY)

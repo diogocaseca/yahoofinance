@@ -87,20 +87,34 @@ class YahooFinanceOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
         """Manage options for an existing Yahoo Finance config entry."""
 
+        errors: dict[str, str] = {}
+
         if user_input is not None:
+            symbols = _parse_symbols(user_input[CONF_SYMBOLS])
+            if len(symbols) == 0:
+                errors["base"] = "symbols_required"
+            else:
+                user_input[CONF_SYMBOLS] = symbols
+
             target_currency = user_input.get(CONF_TARGET_CURRENCY)
             if isinstance(target_currency, str):
                 user_input[CONF_TARGET_CURRENCY] = target_currency.upper().strip()
 
-            return self.async_create_entry(title="", data=user_input)
+                return self.async_create_entry(title="", data=user_input)
 
         options = DEFAULT_ENTRY_OPTIONS.copy()
         options.update(self.config_entry.options)
+        symbols = options.get(CONF_SYMBOLS, self.config_entry.data.get(CONF_SYMBOLS, []))
+        symbols_as_text = "\n".join(symbols)
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        CONF_SYMBOLS,
+                        default=symbols_as_text,
+                    ): str,
                     vol.Required(
                         CONF_MANUAL_SCAN_INTERVAL,
                         default=options[CONF_MANUAL_SCAN_INTERVAL],
@@ -155,4 +169,5 @@ class YahooFinanceOptionsFlow(OptionsFlow):
                     ): bool,
                 }
             ),
+            errors=errors,
         )
