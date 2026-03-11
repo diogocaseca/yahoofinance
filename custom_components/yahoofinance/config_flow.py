@@ -29,7 +29,7 @@ from .const import (
 
 OPT_SYMBOLS = "Symbols"
 OPT_MANUAL_SCAN = "Disable automatic updates"
-OPT_SCAN_SECONDS = "Global automatic update interval (seconds)"
+OPT_SCAN_SECONDS = "Automatic update interval (seconds)"
 OPT_TARGET_CURRENCY = "Target currency (optional)"
 OPT_SHOW_TRENDING = "Show trending icon"
 OPT_SHOW_CURRENCY_SYMBOL = "Use currency symbol as unit"

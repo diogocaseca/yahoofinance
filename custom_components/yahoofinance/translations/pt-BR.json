@@ -7,7 +7,7 @@
         "data": {
           "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)",
           "manual_scan_interval": "Desativar atualizacao automatica",
-          "scan_interval_seconds": "Intervalo global de atualizacao automatica (segundos)"
+          "scan_interval_seconds": "Intervalo de atualizacao automatica (segundos)"
         }
       }
     },
@@ -29,7 +29,7 @@
         "data": {
           "symbols": "Simbolos (separados por virgula, ex.: PETR4.SA, VALE3.SA)",
           "manual_scan_interval": "Desativar atualizacao automatica",
-          "scan_interval_seconds": "Intervalo global de atualizacao automatica (segundos)",
+          "scan_interval_seconds": "Intervalo de atualizacao automatica (segundos)",
           "target_currency": "Moeda alvo (opcional)",
           "show_trending_icon": "Mostrar icone de tendencia",
           "show_currency_symbol_as_unit": "Usar simbolo da moeda como unidade",
