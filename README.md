@@ -201,6 +201,7 @@ friendly_name: Delaware Ivy Science and Techno
 
 
 ## Breaking Changes
+- 2.0.0 - Item configuration is now handled via the UI.
 - 1.5.0 - All dividend values are controlled by the new setting `include_dividend_values`. The fifty_day, post, pre, two_hundred and dividend attributes are now `excluded` by default.
 - As of version [1.2.5](https://github.com/iprak/yahoofinance/releases/), `scan_interval` can be `manual` to suppress automatic update.
 
