@@ -18,11 +18,42 @@ This can be installed through [HACS](https://hacs.xyz/) or by copying all the fi
 
 This integration is configured from the Home Assistant UI only.
 
-- Initial setup (`Add Integration`): only `symbols` is required.
-- Advanced setup (`Configure` button after adding): all optional settings
-  like update interval, decimal places, and include/show flags.
+### 1. Add the integration
 
-You can enter symbols separated by comma or new line.
+1. Open `Settings` > `Devices & Services`.
+2. Click `Add Integration`.
+3. Search for `Yahoo Finance`.
+4. Fill the initial form:
+   - `symbols`: symbols separated by comma (example: `PETR4.SA, VALE3.SA`)
+   - `manual_scan_interval`: disable automatic updates (global)
+   - `scan_interval_seconds`: automatic update interval in seconds (global)
+5. Save.
+
+Notes:
+- You can create more than one Yahoo Finance integration entry.
+- `scan_interval` is global for all symbols inside the same integration entry.
+
+### 2. Change settings later
+
+After the integration is created, open `Configure` in the same integration card.
+
+In this screen you can:
+- Add or remove symbols.
+- Change the global update interval.
+- Enable or disable optional data groups and display behavior.
+
+Available advanced options:
+- `target_currency`
+- `show_trending_icon`
+- `show_currency_symbol_as_unit`
+- `decimal_places`
+- `include_fifty_day_values`
+- `include_post_values`
+- `include_pre_values`
+- `include_two_hundred_day_values`
+- `include_fifty_two_week_values`
+- `include_dividend_values`
+- `show_off_market_values`
 
 The above configuration will generate an entity with the id `sensor.yahoofinance_istnx` and current value as the state along with these attributes:
 
@@ -87,11 +118,9 @@ friendly_name: Delaware Ivy Science and Techno
 
 ### Integration
 
-- Data fetch interval can be adjusted by specifying the `scan_interval` setting whose default value is 6 hours and the minimum value is 30 seconds.
-
-  Set `automatic update interval (seconds)` in the integration options.
-
-  You can disable automatic update by passing `manual` for `scan_interval`.
+- Data fetch interval can be adjusted with:
+  - `manual_scan_interval`
+  - `scan_interval_seconds` (minimum 30 seconds)
 
 - Trending icons (trending-up, trending-down or trending-neutral) can be displayed instead of currency based icon by specifying `show_trending_icon`.
   Enable `show_trending_icon` in the integration options.
@@ -158,8 +187,6 @@ friendly_name: Delaware Ivy Science and Techno
 
 - The data fetch interval is configured at integration level in options.
 
-- Per-symbol `no_unit` customization is no longer supported through YAML.
-
 ## Examples
 
 - The symbol can also represent a financial index such as
@@ -172,7 +199,7 @@ friendly_name: Delaware Ivy Science and Techno
 
 - The trending icons themselves cannot be colored but colors can be added using [lovelace-card-mod](https://github.com/thomasloven/lovelace-card-mod). Here [auto-entities](https://github.com/thomasloven/lovelace-auto-entities) is being used to simplify the code.
 
-  ```yaml
+  ```
   - type: custom:auto-entities
     card:
       type: entities
@@ -201,7 +228,7 @@ friendly_name: Delaware Ivy Science and Techno
 
 
 ## Breaking Changes
-- 2.0.0 - Item configuration is now handled via the UI.
+- 2.0.0 - Item configuration is now handled via the UI. YAML configurations are no longer supported.
 - 1.5.0 - All dividend values are controlled by the new setting `include_dividend_values`. The fifty_day, post, pre, two_hundred and dividend attributes are now `excluded` by default.
 - As of version [1.2.5](https://github.com/iprak/yahoofinance/releases/), `scan_interval` can be `manual` to suppress automatic update.
 
