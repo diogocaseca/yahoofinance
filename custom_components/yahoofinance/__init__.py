@@ -283,6 +283,9 @@ def _domain_config_from_entry(entry: ConfigEntry) -> dict:
     elif target_currency == "":
         target_currency = None
 
+    for symbol_definition in symbol_definitions:
+        symbol_definition.target_currency = target_currency
+
     domain_config = {
         CONF_SYMBOLS: symbol_definitions,
         CONF_SCAN_INTERVAL: scan_interval,
